@@ -20,45 +20,42 @@ class AdminsController extends AppController
     if (in_array($this->request->getParam('action'), ['login', 'signup', 'forgotPassword', 'resetPassword'])) {
         $this->viewBuilder()->setLayout('auth');
     }
+
+    // Allow updateStatus action without authentication check
+    $this->Authentication->addUnauthenticatedActions(['login', 'updateStatus']);
 }
 
     public function login()
-    {
-        if ($this->request->is('post')) {
-            $data = $this->request->getData();
-            
-            // Find the user
-            $user = $this->Admins->find()
-                ->where(['username' => $data['username']])
-                ->first();
-            
-            if ($user) {
-                $hasher = new DefaultPasswordHasher();
-                $passwordMatch = $hasher->check($data['password'], $user->password);
-                
-                // Log authentication attempt details
-                Log::write('debug', 'Login attempt details:');
-                Log::write('debug', 'Username found: Yes');
-                Log::write('debug', 'Password match: ' . ($passwordMatch ? 'Yes' : 'No'));
-                Log::write('debug', 'Stored hash: ' . substr($user->password, 0, 10) . '...');
-                Log::write('debug', 'Input password length: ' . strlen($data['password']));
-                
-                if ($passwordMatch) {
-                    // Manually set the user identity
-                    $this->Authentication->setIdentity($user);
-                    
-                    // Log successful authentication
-                    Log::write('debug', 'Authentication successful, redirecting to dashboard');
-                    
-                    return $this->redirect(['controller' => 'Dashboard', 'action' => 'index']);
-                }
-            }
-            
-            // If we get here, authentication failed
-            Log::write('debug', 'Authentication failed');
-            $this->Flash->error('Invalid username or password');
-        }
+{
+    $this->request->allowMethod(['get', 'post']);
+    
+    $result = $this->Authentication->getResult();
+
+    // Add detailed logging
+    Log::write('debug', '-------- Login Attempt Details --------');
+    Log::write('debug', 'Is POST request: ' . ($this->request->is('post') ? 'Yes' : 'No'));
+    if ($this->request->is('post')) {
+        Log::write('debug', 'POST data: ' . json_encode($this->request->getData()));
     }
+    Log::write('debug', 'Authentication Result: ' . ($result ? 'Exists' : 'None'));
+    if ($result) {
+        Log::write('debug', 'Is Valid: ' . ($result->isValid() ? 'Yes' : 'No'));
+        Log::write('debug', 'Status: ' . $result->getStatus());
+        Log::write('debug', 'Errors: ' . json_encode($result->getErrors()));
+    }
+
+    // If user is already logged in, redirect them
+    if ($result && $result->isValid()) {
+        $redirect = $this->Authentication->getLoginRedirect() ?? ['controller' => 'Dashboard', 'action' => 'index'];
+        Log::write('debug', 'Redirecting to: ' . json_encode($redirect));
+        return $this->redirect($redirect);
+    }
+
+    if ($this->request->is('post')) {
+        $this->Flash->error('Invalid username or password');
+    }
+
+}
 
     public function signup()
     {
@@ -120,6 +117,77 @@ class AdminsController extends AppController
         return $this->redirect(['action' => 'login']);
     }
 }
+
+public function profile()
+{
+    $identity = $this->Authentication->getIdentity();
+    $username = $identity ? $identity->username : null;
+    
+    if (!$username) {
+        $this->Flash->error(__('Unable to find your profile.'));
+        return $this->redirect(['action' => 'login']);
+    }
+
+    $admin = $this->Admins->findByUsername($username)->firstOrFail();
+
+    if ($this->request->is(['patch', 'post', 'put'])) {
+        $data = $this->request->getData();
+        
+        // Only allow updating full_name and email
+        $admin = $this->Admins->patchEntity($admin, [
+            'full_name' => $data['full_name'],
+            'email' => $data['email']
+        ]);
+
+        if ($this->Admins->save($admin)) {
+            $this->Flash->success(__('Your profile has been updated.'));
+            return $this->redirect(['action' => 'profile']);
+        }
+        $this->Flash->error(__('Unable to update your profile. Please check the form and try again.'));
+    }
+
+    $this->set(compact('admin'));
+}
+
+public function updateStatus()
+{
+    $this->request->allowMethod(['post', 'ajax']);
+    
+    $response = ['success' => false, 'message' => ''];
+
+    try {
+        if ($this->request->is('ajax')) {
+            $status = $this->request->getData('status');
+            $validStatuses = ['Online', 'Offline', 'Break'];
+            
+            if (in_array($status, $validStatuses)) {
+                $identity = $this->Authentication->getIdentity();
+                $admin = $this->Admins->get($identity->id);
+                $admin->status = $status;
+                
+                if ($this->Admins->save($admin)) {
+                    $response = [
+                        'success' => true,
+                        'message' => 'Status updated successfully',
+                        'status' => $status
+                    ];
+                } else {
+                    $response['message'] = 'Could not save status';
+                }
+            } else {
+                $response['message'] = 'Invalid status';
+            }
+        }
+    } catch (\Exception $e) {
+        $response['message'] = 'An error occurred';
+        $this->log($e->getMessage()); // Log the error
+    }
+
+    return $this->response
+        ->withType('application/json')
+        ->withStringBody(json_encode($response));
+}
+
 
 public function resetPassword($token = null)
 {

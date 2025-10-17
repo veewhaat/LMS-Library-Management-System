@@ -14,10 +14,46 @@ class BooksController extends AppController
     }
 
     public function index()
-    {
-        $books = $this->paginate($this->Books);
-        $this->set(compact('books'));
+{
+    // Get search and filter parameters
+    $search = $this->request->getQuery('search');
+    $bookType = $this->request->getQuery('book_type');
+
+    // Base query
+    $query = $this->Books->find();
+
+    // Apply search if provided
+    if ($search) {
+        $query->where([
+            'OR' => [
+                'title LIKE' => '%' . $search . '%',
+                'author_name LIKE' => '%' . $search . '%',
+                'isbn LIKE' => '%' . $search . '%',
+                'publisher LIKE' => '%' . $search . '%'
+            ]
+        ]);
     }
+
+    // Apply book type filter if provided
+    if ($bookType && $bookType !== 'all') {
+        $query->where(['book_type' => $bookType]);
+    }
+
+    // Get unique book types for filter dropdown
+    $bookTypes = $this->Books->find()
+        ->select(['book_type'])
+        ->distinct(['book_type'])
+        ->where(['book_type IS NOT' => null])
+        ->order(['book_type' => 'ASC'])
+        ->all()
+        ->extract('book_type')
+        ->toArray();
+
+    // Paginate the results
+    $books = $this->paginate($query);
+
+    $this->set(compact('books', 'bookTypes', 'search', 'bookType'));
+}
 
     public function add()
     {

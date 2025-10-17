@@ -12,6 +12,7 @@ use Cake\Http\Middleware\CsrfProtectionMiddleware;
 use Cake\Http\MiddlewareQueue;
 use Cake\Routing\Middleware\AssetMiddleware;
 use Cake\Routing\Middleware\RoutingMiddleware;
+use Cake\Routing\Router;
 use Authentication\AuthenticationService;
 use Authentication\AuthenticationServiceInterface;
 use Authentication\AuthenticationServiceProviderInterface;
@@ -36,6 +37,8 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
         if (Configure::read('debug') && !$this->getPlugins()->has('DebugKit')) {
             $this->addPlugin('DebugKit');
         }
+
+        $this->addPlugin('CakePdf');
     }
 
     public function middleware(MiddlewareQueue $middlewareQueue): MiddlewareQueue
@@ -51,39 +54,47 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
     }
 
     public function getAuthenticationService(ServerRequestInterface $request): AuthenticationServiceInterface
-    {
-        $service = new AuthenticationService();
+{
+    $authenticationService = new AuthenticationService([
+        'unauthenticatedRedirect' => Router::url('/login'),
+        'queryParam' => 'redirect',
+    ]);
 
-        // Define where users should be redirected to when they are not authenticated
-        $service->setConfig([
-            'unauthenticatedRedirect' => '/admins/login',
-            'queryParam' => 'redirect',
-        ]);
+    // Load identifiers with detailed configuration
+    $authenticationService->loadIdentifier('Authentication.Password', [
+        'fields' => [
+            'username' => 'username',
+            'password' => 'password',
+        ],
+        'resolver' => [
+            'className' => 'Authentication.Orm',
+            'userModel' => 'Admins',
+            'finder' => 'all'  // add this line
+        ],
+        'passwordHasher' => [
+            'className' => 'Authentication.Default'
+        ]
+    ]);
 
-        // Load the authenticators
-        $service->loadAuthenticator('Authentication.Session');
-        $service->loadAuthenticator('Authentication.Form', [
-            'fields' => [
-                'username' => 'username',
-                'password' => 'password',
-            ],
-            'loginUrl' => '/admins/login',
-        ]);
+    // Load Session authenticator first
+    $authenticationService->loadAuthenticator('Authentication.Session', [
+        'fields' => [
+            'username' => 'username',
+        ],
+        'identify' => true
+    ]);
 
-        // Configure password check and user source
-        $service->loadIdentifier('Authentication.Password', [
-            'resolver' => [
-                'className' => 'Authentication.Orm',
-                'userModel' => 'Admins',
-            ],
-            'fields' => [
-                'username' => 'username',
-                'password' => 'password',
-            ],
-        ]);
+    // Load Form authenticator
+    $authenticationService->loadAuthenticator('Authentication.Form', [
+        'fields' => [
+            'username' => 'username',
+            'password' => 'password',
+        ],
+        'loginUrl' => Router::url('/login'),
+    ]);
 
-        return $service;
-    }
+    return $authenticationService;
+}
 
     protected function bootstrapCli(): void
     {

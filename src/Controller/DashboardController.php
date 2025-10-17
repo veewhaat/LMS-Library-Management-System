@@ -75,6 +75,24 @@ class DashboardController extends AppController
         $userRole = 'Admin';
         $userStatus = 'Online';
 
+        // Add this new query for due books
+    $dueToday = $this->Issued->find()
+        ->where([
+            'status' => 'Issued',
+            'DATE(due_date)' => FrozenTime::now()->format('Y-m-d')
+        ])
+        ->order(['due_date' => 'ASC'])
+        ->all();
+
+    // Get overdue books
+    $overdueBooks = $this->Issued->find()
+        ->where([
+            'status' => 'Issued',
+            'due_date <' => FrozenTime::now()->format('Y-m-d')
+        ])
+        ->order(['due_date' => 'ASC'])
+        ->all();
+
         $this->set(compact(
             'totalBooks',
             'totalMagazines',
@@ -85,7 +103,9 @@ class DashboardController extends AppController
             'notReturned',
             'currentUser',
             'currentDateTime',
-            'user'
+            'user',
+            'dueToday',
+            'overdueBooks'
         ));
     }
 }

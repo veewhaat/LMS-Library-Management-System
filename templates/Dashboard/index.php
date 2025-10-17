@@ -5,6 +5,25 @@
  * @var string $currentUser
  */
 ?>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="position-relative">
+                <?= $this->Html->image('library.jpg', [
+                    'class' => 'img-fluid w-100',
+                    'alt' => 'Library Management System',
+                    'style' => 'max-height: 400px; object-fit: cover;'
+                ]) ?>
+                <div class="position-absolute" style="bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); padding: 20px;">
+                    <h3 class="text-white mb-0">Welcome to Library Management System</h3>
+                    <p class="text-white-50 mb-0">Manage your library efficiently</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Small boxes (Stat box) -->
 <div class="row">
     <div class="col-lg-4 col-6">

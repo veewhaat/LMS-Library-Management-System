@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace App\Model\Table;
 
 use Cake\ORM\Table;
+use Cake\ORM\RulesChecker;
+use Cake\Log\Log;
 use Cake\Validation\Validator;
 
 class AdminsTable extends Table
@@ -15,6 +17,11 @@ class AdminsTable extends Table
         $this->setTable('admins');
         $this->setDisplayField('full_name');
         $this->setPrimaryKey('id');
+
+        $this->getEventManager()->on('Model.beforeFind', function ($event, $query) {
+            Log::write('debug', 'SQL Query: ' . $query->sql());
+            return $query;
+        });
     }
 
     public function validationDefault(Validator $validator): Validator
@@ -38,12 +45,22 @@ class AdminsTable extends Table
             ->notEmptyString('email')
             ->add('email', 'unique', ['rule' => 'validateUnique', 'provider' => 'table']);
 
+        
         $validator
             ->scalar('password')
             ->maxLength('password', 255)
             ->requirePresence('password', 'create')
             ->notEmptyString('password');
-
+        
+    
         return $validator;
+    }
+
+    public function buildRules(RulesChecker $rules): RulesChecker
+    {
+        $rules->add($rules->isUnique(['username']), ['errorField' => 'username', 'message' => 'This username is already taken']);
+        $rules->add($rules->isUnique(['email']), ['errorField' => 'email', 'message' => 'This email is already registered']);
+
+        return $rules;
     }
 }

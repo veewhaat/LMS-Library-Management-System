@@ -14,10 +14,45 @@ class NewspapersController extends AppController
     }
 
     public function index()
-    {
-        $newspapers = $this->paginate($this->Newspapers);
-        $this->set(compact('newspapers'));
+{
+    // Get search and filter parameters
+    $search = $this->request->getQuery('search');
+    $language = $this->request->getQuery('language');
+
+    // Base query
+    $query = $this->Newspapers->find();
+
+    // Apply search if provided
+    if ($search) {
+        $query->where([
+            'OR' => [
+                'name LIKE' => '%' . $search . '%',
+                'publisher LIKE' => '%' . $search . '%',
+                'type LIKE' => '%' . $search . '%'
+            ]
+        ]);
     }
+
+    // Apply language filter if provided
+    if ($language && $language !== 'all') {
+        $query->where(['language' => $language]);
+    }
+
+    // Get unique languages for filter dropdown
+    $languages = $this->Newspapers->find()
+        ->select(['language'])
+        ->distinct(['language'])
+        ->where(['language IS NOT' => null])
+        ->order(['language' => 'ASC'])
+        ->all()
+        ->extract('language')
+        ->toArray();
+
+    // Paginate the results
+    $newspapers = $this->paginate($query);
+
+    $this->set(compact('newspapers', 'languages', 'search', 'language'));
+}
 
     public function add()
     {

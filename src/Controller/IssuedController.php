@@ -19,12 +19,61 @@ class IssuedController extends AppController
     }
 
     public function index()
-    {
-        $issued = $this->paginate($this->Issued, [
-            'order' => ['issue_date' => 'DESC']
+{
+    // Get search and filter parameters
+    $search = $this->request->getQuery('search');
+    $status = $this->request->getQuery('status');
+    $dateRange = $this->request->getQuery('date_range', 'all');
+
+    // Base query
+    $query = $this->Issued->find()
+        ->order(['issue_date' => 'DESC']);
+
+    // Apply search if provided
+    if ($search) {
+        $query->where([
+            'OR' => [
+                'member LIKE' => '%' . $search . '%',
+                'number LIKE' => '%' . $search . '%',
+                'book_number LIKE' => '%' . $search . '%',
+                'book_title LIKE' => '%' . $search . '%'
+            ]
         ]);
-        $this->set(compact('issued'));
     }
+
+    // Apply status filter if provided
+    if ($status && $status !== 'all') {
+        $query->where(['status' => $status]);
+    }
+
+    // Apply date range filter
+    switch ($dateRange) {
+        case 'today':
+            $query->where(['DATE(issue_date)' => date('Y-m-d')]);
+            break;
+        case 'week':
+            $query->where(['issue_date >=' => date('Y-m-d', strtotime('-1 week'))]);
+            break;
+        case 'month':
+            $query->where(['issue_date >=' => date('Y-m-d', strtotime('-1 month'))]);
+            break;
+    }
+
+    // Get unique statuses for filter dropdown
+    $statuses = $this->Issued->find()
+        ->select(['status'])
+        ->distinct(['status'])
+        ->where(['status IS NOT' => null])
+        ->order(['status' => 'ASC'])
+        ->all()
+        ->extract('status')
+        ->toArray();
+
+    // Paginate the results
+    $issued = $this->paginate($query);
+
+    $this->set(compact('issued', 'statuses', 'search', 'status', 'dateRange'));
+}
 
     public function add()
     {

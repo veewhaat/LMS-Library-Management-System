@@ -18,6 +18,7 @@ class Admin extends Entity
         'last_login' => true,
         'created' => true,
         'modified' => true,
+        'status' => true,
     ];
 
     protected array $_hidden = [

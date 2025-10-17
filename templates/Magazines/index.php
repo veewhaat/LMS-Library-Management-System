@@ -9,6 +9,60 @@
         <h3><?= __('Magazines') ?></h3>
         <?= $this->Html->link(__('Add New Magazine'), ['action' => 'add'], ['class' => 'btn btn-primary']) ?>
     </div>
+
+    <!-- Search and Filter Form -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <?= $this->Form->create(null, [
+                'type' => 'get',
+                'class' => 'row g-3 align-items-end'
+            ]) ?>
+                <div class="col-md-5">
+                    <?= $this->Form->control('search', [
+                        'label' => 'Search Magazines',
+                        'class' => 'form-control',
+                        'placeholder' => 'Search by name or publisher...',
+                        'value' => $this->request->getQuery('search'),
+                        'div' => false
+                    ]) ?>
+                </div>
+                <div class="col-md-4">
+                    <?= $this->Form->control('type', [
+                        'label' => 'Filter by Type',
+                        'class' => 'form-control',
+                        'empty' => '(All Types)',
+                        'options' => array_combine($magazineTypes, $magazineTypes),
+                        'value' => $this->request->getQuery('type'),
+                        'div' => false
+                    ]) ?>
+                </div>
+                <div class="col-md-3">
+                    <?= $this->Form->button(__('Search & Filter'), ['class' => 'btn btn-primary me-2']) ?>
+                    <?= $this->Html->link(
+                        __('Reset'),
+                        ['action' => 'index'],
+                        ['class' => 'btn btn-secondary']
+                    ) ?>
+                </div>
+            <?= $this->Form->end() ?>
+        </div>
+    </div>
+
+    <!-- Display search results message if searching -->
+    <?php if ($this->request->getQuery('search') || $this->request->getQuery('type')): ?>
+        <div class="alert alert-info">
+            <?php
+                $criteria = [];
+                if ($this->request->getQuery('search')) {
+                    $criteria[] = 'search term "' . h($this->request->getQuery('search')) . '"';
+                }
+                if ($this->request->getQuery('type')) {
+                    $criteria[] = 'type "' . h($this->request->getQuery('type')) . '"';
+                }
+                echo 'Showing results for ' . implode(' and ', $criteria);
+            ?>
+        </div>
+    <?php endif; ?>
     
     <div class="table-responsive">
         <table class="table table-striped">
@@ -61,6 +115,22 @@
 </div>
 
 <style>
+
+.card {
+    background: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 1.5rem;
+}
+
+.form-control:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+    border-color: #80bdff;
+}
+
+.alert {
+    margin-bottom: 1rem;
+}
+
 .magazines.index {
     padding: 20px;
 }

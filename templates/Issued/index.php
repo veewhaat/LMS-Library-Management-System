@@ -9,6 +9,86 @@
         <h3><?= __('Issued Books') ?></h3>
         <?= $this->Html->link(__('Issue New Book'), ['action' => 'add'], ['class' => 'btn btn-primary']) ?>
     </div>
+
+    <!-- Search and Filter Form -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <?= $this->Form->create(null, [
+                'type' => 'get',
+                'class' => 'row g-3 align-items-end'
+            ]) ?>
+                <div class="col-md-4">
+                    <?= $this->Form->control('search', [
+                        'label' => 'Search Books',
+                        'class' => 'form-control',
+                        'placeholder' => 'Search by member, book number, or title...',
+                        'value' => $this->request->getQuery('search'),
+                        'div' => false
+                    ]) ?>
+                </div>
+                <div class="col-md-3">
+                    <?= $this->Form->control('status', [
+                        'label' => 'Filter by Status',
+                        'class' => 'form-control',
+                        'empty' => '(All Statuses)',
+                        'options' => array_combine($statuses, $statuses),
+                        'value' => $this->request->getQuery('status'),
+                        'div' => false
+                    ]) ?>
+                </div>
+                <div class="col-md-3">
+                    <?= $this->Form->control('date_range', [
+                        'label' => 'Date Range',
+                        'class' => 'form-control',
+                        'type' => 'select',
+                        'options' => [
+                            'all' => 'All Time',
+                            'today' => 'Today',
+                            'week' => 'Last 7 Days',
+                            'month' => 'Last 30 Days'
+                        ],
+                        'value' => $this->request->getQuery('date_range', 'all'),
+                        'div' => false
+                    ]) ?>
+                </div>
+                <div class="col-md-2">
+                    <?= $this->Form->button(__('Search & Filter'), ['class' => 'btn btn-primary me-2']) ?>
+                    <?= $this->Html->link(
+                        __('Reset'),
+                        ['action' => 'index'],
+                        ['class' => 'btn btn-secondary']
+                    ) ?>
+                </div>
+            <?= $this->Form->end() ?>
+        </div>
+    </div>
+
+    <!-- Display search results message if searching -->
+    <?php if ($this->request->getQuery('search') || $this->request->getQuery('status') || ($this->request->getQuery('date_range') && $this->request->getQuery('date_range') !== 'all')): ?>
+        <div class="alert alert-info">
+            <?php
+                $criteria = [];
+                if ($this->request->getQuery('search')) {
+                    $criteria[] = 'search term "' . h($this->request->getQuery('search')) . '"';
+                }
+                if ($this->request->getQuery('status')) {
+                    $criteria[] = 'status "' . h($this->request->getQuery('status')) . '"';
+                }
+                $dateRange = $this->request->getQuery('date_range');
+                if ($dateRange && $dateRange !== 'all') {
+                    $ranges = [
+                        'today' => 'today',
+                        'week' => 'last 7 days',
+                        'month' => 'last 30 days'
+                    ];
+                    if (isset($ranges[$dateRange])) {
+                        $criteria[] = 'date range "' . $ranges[$dateRange] . '"';
+                    }
+                }
+                echo !empty($criteria) ? 'Showing results for ' . implode(' and ', $criteria) : '';
+            ?>
+        </div>
+    <?php endif; ?>
     
     <div class="table-responsive">
         <table class="table table-striped">
@@ -68,6 +148,23 @@
 </div>
 
 <style>
+
+.card {
+    background: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 1.5rem;
+}
+
+.form-control:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+    border-color: #80bdff;
+}
+
+.alert {
+    margin-bottom: 1rem;
+}
+
+
 .issued.index {
     padding: 20px;
 }

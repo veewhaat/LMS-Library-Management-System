@@ -1,3 +1,7 @@
+# Library Management System (LMS)
+
+A web-based Library Management System built with CakePHP 4.x that helps manage books, magazines, newspapers, and track issued/returned items.
+
 # CakePHP Application Skeleton
 
 ![Build Status](https://github.com/cakephp/app/actions/workflows/ci.yml/badge.svg?branch=5.x)
@@ -51,3 +55,41 @@ Other environment agnostic settings can be changed in `config/app.php`.
 The app skeleton uses [Milligram](https://milligram.io/) (v1.3) minimalist CSS
 framework by default. You can, however, replace it with any other library or
 custom styles.
+
+
+## Installation Steps
+
+1. **Clone/Download the Project**
+   - Download the project folder
+   - Place it in `C:\xampp\htdocs\LMS`
+
+2. **Database Setup**
+   - Start XAMPP (Apache and MySQL)
+   - Open phpMyAdmin (http://localhost/phpmyadmin)
+   - Create a new database named 'library'
+   - Import the database schema below
+
+3. **Database Configuration**
+   Create/Update `config/app_local.php` with:
+   ```php
+   'Datasources' => [
+       'default' => [
+           'host' => 'localhost',
+           'username' => 'root', // default XAMPP username
+           'password' => '', // default XAMPP password
+           'database' => 'library',
+           'url' => env('DATABASE_URL', null),
+       ],
+   ],
+
+4. **Start the Application**
+   - Access the application at: http://localhost/LMS
+
+5. **Database Schema**
+   - Refer to library.sql
+
+6. **Default Admin Account**
+   - After setting up the database, create your admin account using the signup page at: http://localhost/LMS/admins/signup
+
+
+  

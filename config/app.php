@@ -47,6 +47,24 @@ return [
      *   `plugins`, `templates`, `locales` subkeys, which allow the definition of
      *   paths for plugins, view templates and locale files respectively.
      */
+
+    'CakePdf' => [
+        'engine' => [
+            'className' => 'CakePdf.DomPdf',
+            'options' => [
+                'isRemoteEnabled' => true
+            ]
+        ],
+        'margin' => [
+            'bottom' => 15,
+            'left' => 15,
+            'right' => 15,
+            'top' => 15
+        ],
+        'orientation' => 'portrait',
+        'download' => true
+    ],
+    
     'App' => [
         'namespace' => 'App',
         'encoding' => env('APP_ENCODING', 'UTF-8'),
@@ -467,5 +485,27 @@ return [
     'TestSuite' => [
         'errorLevel' => null,
         'fixtureStrategy' => null,
+    ],
+
+
+    /**Export pdf congiguration */
+    'CakePdf' => [
+        'engine' => [
+            'className' => 'CakePdf.WkHtmlToPdf',
+            'binary' => '/usr/local/bin/wkhtmltopdf', // Adjust this path based on your system
+            'options' => [
+                'print-media-type' => true,
+                'outline' => true,
+                'dpi' => 96
+            ],
+        ],
+        'margin' => [
+            'bottom' => 15,
+            'left' => 15,
+            'right' => 15,
+            'top' => 15
+        ],
+        'orientation' => 'portrait',
+        'download' => true
     ],
 ];

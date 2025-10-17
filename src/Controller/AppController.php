@@ -19,30 +19,24 @@ class AppController extends Controller
         // Set the layout
         $this->viewBuilder()->setLayout('default');
 
-        // Get current user's information
+        // Only set these variables if user is authenticated
         $identity = $this->Authentication->getIdentity();
-        $currentUser = $identity ? $identity->username : 'veewhaat';
-        
-        // Set Malaysian timezone (UTC+8)
-        $currentDateTime = FrozenTime::now()
-            ->setTimezone('Asia/Kuala_Lumpur')
-            ->format('Y-m-d H:i:s');
+        if ($identity) {
+            $currentUser = $identity->get('username');
+            
+            // Set Malaysian timezone (UTC+8)
+            $currentDateTime = FrozenTime::now()
+                ->setTimezone('Asia/Kuala_Lumpur')
+                ->format('Y-m-d H:i:s');
 
-        // Make these variables available in all views
-        $this->set(compact('currentUser', 'currentDateTime'));
+            // Make these variables available in all views
+            $this->set(compact('currentUser', 'currentDateTime'));
+        }
     }
 
     public function beforeFilter(EventInterface $event)
     {
         parent::beforeFilter($event);
-        
-        // Get authentication status
-        $identity = $this->Authentication->getIdentity();
-        
-        // Pass authentication status to all views
-        $this->set('logged_in', !is_null($identity));
-        if ($identity) {
-            $this->set('current_user', $identity);
-        }
-    }
+        $this->Authentication->addUnauthenticatedActions(['login', 'updateStatus']);
+    } 
 }

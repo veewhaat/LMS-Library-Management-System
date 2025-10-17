@@ -18,12 +18,61 @@ class ReturnedController extends AppController
     }
 
     public function index()
-    {
-        $returned = $this->paginate($this->Returned, [
-            'order' => ['return_date' => 'DESC']
+{
+    // Get search and filter parameters
+    $search = $this->request->getQuery('search');
+    $status = $this->request->getQuery('status');
+    $dateRange = $this->request->getQuery('date_range', 'all');
+
+    // Base query
+    $query = $this->Returned->find()
+        ->order(['return_date' => 'DESC']);
+
+    // Apply search if provided
+    if ($search) {
+        $query->where([
+            'OR' => [
+                'member LIKE' => '%' . $search . '%',
+                'number LIKE' => '%' . $search . '%',
+                'book_number LIKE' => '%' . $search . '%',
+                'book_title LIKE' => '%' . $search . '%'
+            ]
         ]);
-        $this->set(compact('returned'));
     }
+
+    // Apply status filter if provided
+    if ($status && $status !== 'all') {
+        $query->where(['status' => $status]);
+    }
+
+    // Apply date range filter
+    switch ($dateRange) {
+        case 'today':
+            $query->where(['DATE(return_date)' => date('Y-m-d')]);
+            break;
+        case 'week':
+            $query->where(['return_date >=' => date('Y-m-d', strtotime('-1 week'))]);
+            break;
+        case 'month':
+            $query->where(['return_date >=' => date('Y-m-d', strtotime('-1 month'))]);
+            break;
+    }
+
+    // Get unique statuses for filter dropdown
+    $statuses = $this->Returned->find()
+        ->select(['status'])
+        ->distinct(['status'])
+        ->where(['status IS NOT' => null])
+        ->order(['status' => 'ASC'])
+        ->all()
+        ->extract('status')
+        ->toArray();
+
+    // Paginate the results
+    $returned = $this->paginate($query);
+
+    $this->set(compact('returned', 'statuses', 'search', 'status', 'dateRange'));
+}
 
     public function add()
     {

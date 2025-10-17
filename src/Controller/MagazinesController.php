@@ -14,10 +14,44 @@ class MagazinesController extends AppController
     }
 
     public function index()
-    {
-        $magazines = $this->paginate($this->Magazines);
-        $this->set(compact('magazines'));
+{
+    // Get search and filter parameters
+    $search = $this->request->getQuery('search');
+    $magazineType = $this->request->getQuery('type');
+
+    // Base query
+    $query = $this->Magazines->find();
+
+    // Apply search if provided
+    if ($search) {
+        $query->where([
+            'OR' => [
+                'name LIKE' => '%' . $search . '%',
+                'publisher LIKE' => '%' . $search . '%'
+            ]
+        ]);
     }
+
+    // Apply type filter if provided
+    if ($magazineType && $magazineType !== 'all') {
+        $query->where(['type' => $magazineType]);
+    }
+
+    // Get unique magazine types for filter dropdown
+    $magazineTypes = $this->Magazines->find()
+        ->select(['type'])
+        ->distinct(['type'])
+        ->where(['type IS NOT' => null])
+        ->order(['type' => 'ASC'])
+        ->all()
+        ->extract('type')
+        ->toArray();
+
+    // Paginate the results
+    $magazines = $this->paginate($query);
+
+    $this->set(compact('magazines', 'magazineTypes', 'search', 'magazineType'));
+}
 
     public function add()
     {
